@@ -185,6 +185,19 @@ uint64_t sbox_8[4][16] = {
 //       the entire last block will be discarded since the last byte is 0
 BLOCKLIST pad_last_block(BLOCKLIST blocks) {
     // TODO
+	int pad = 0;
+	BLOCKLIST walker = blocks;
+	while (walker->next != NULL) {
+		walker = walker->next;
+	}
+	//Last Block
+	//Case 1: Last block is too short, pad it
+	if (walker->size < 8) {
+		pad = 8 - walker->size;
+		for (int i=0; i<pad-1; i++) {
+
+		}
+	}
    return blocks;
 }
 
