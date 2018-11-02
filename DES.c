@@ -239,7 +239,7 @@ BLOCKLIST read_cleartext_message(FILE *msg_fp) {
 		}
 	}
     // call pad_last_block() here to pad the last block!
-   return NULL;
+   return block;
 }
 
 // Reads the encrypted message, and returns a linked list of blocks, each 64 bits. 
@@ -248,6 +248,7 @@ BLOCKLIST read_cleartext_message(FILE *msg_fp) {
 // 64-bit blocks.
 BLOCKLIST read_encrypted_file(FILE *msg_fp) {
     // TODO
+
    return NULL;
 }
 
@@ -335,9 +336,9 @@ void encrypt (int argc, char **argv) {
       fclose(msg_fp);
 
       BLOCKLIST encrypted_message;
-      if (strcmp(argv[2], "-ecb")) {	
+      if (!strcmp(argv[2], "-ecb")) {
          encrypted_message = des_enc_ECB(msg);
-      } else if (strcmp(argv[2], "-ctr")) {	
+      } else if (!strcmp(argv[2], "-ctr")) {
          encrypted_message = des_enc_CTR(msg);
       } else {
          printf("No such mode.\n");
@@ -348,20 +349,22 @@ void encrypt (int argc, char **argv) {
 }
 
 void decrypt (int argc, char **argv) {
-      FILE *encrypted_msg_fp = fopen("encrypted_msg.bin", "wb");
+//      FILE *encrypted_msg_fp = fopen("encrypted_msg.bin", "wb");
+	  FILE *encrypted_msg_fp = fopen("encrypted_msg.bin", "r");
       BLOCKLIST encrypted_message = read_encrypted_file(encrypted_msg_fp);
       fclose(encrypted_msg_fp);
 
       BLOCKLIST decrypted_message;
-      if (strcmp(argv[2], "-ecb")) {	
+      if (!strcmp(argv[2], "-ecb")) {
          decrypted_message = des_dec_ECB(encrypted_message);
-      } else if (strcmp(argv[2], "-ctr")) {	
+      } else if (!strcmp(argv[2], "-ctr")) {
          encrypted_message = des_dec_CTR(encrypted_message);
       } else {
          printf("No such mode.\n");
       };
 
-      FILE *decrypted_msg_fp = fopen("decrypted_message.txt", "r");
+//      FILE *decrypted_msg_fp = fopen("decrypted_message.txt", "r");
+      FILE *decrypted_msg_fp = fopen("decrypted_message.txt", "wb");
       write_decrypted_message(decrypted_msg_fp, decrypted_message);
       fclose(decrypted_msg_fp);
 }
@@ -372,9 +375,9 @@ int main(int argc, char **argv){
    generateSubKeys(key);              // This does nothing right now.
    fclose(key_fp);
 
-   if (strcmp(argv[1], "-enc")) {
+   if (!strcmp(argv[1], "-enc")) {
       encrypt(argc, argv);	
-   } else if (strcmp(argv[1], "-dec")) {
+   } else if (!strcmp(argv[1], "-dec")) {
       decrypt(argc, argv);	
    } else {
      printf("First argument should be -enc or -dec\n"); 
