@@ -195,8 +195,12 @@ BLOCKLIST pad_last_block(BLOCKLIST blocks) {
 	if (walker->size < 8) {
 		pad = 8 - walker->size;
 		for (int i=0; i<pad-1; i++) {
-
+			walker->block[walker->size + i] = 0;
 		}
+		walker->block[walker->size - 1] = walker->size;
+	} else {
+		BLOCKLIST finalBlock = {0,0,0,0,0,0,0,0};
+		walker->next = finalBlock;
 	}
    return blocks;
 }
@@ -207,6 +211,7 @@ BLOCKLIST pad_last_block(BLOCKLIST blocks) {
 // Continue to the end of the file.
 BLOCKLIST read_cleartext_message(FILE *msg_fp) {
     // TODO
+
     // call pad_last_block() here to pad the last block!
    return NULL;
 }
