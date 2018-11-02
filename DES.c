@@ -198,6 +198,7 @@ BLOCKLIST pad_last_block(BLOCKLIST blocks) {
 			walker->block[walker->size + i] = 0;
 		}
 		walker->block[walker->size - 1] = walker->size;
+	//Case 2: Last block is 8 bytes exactly, make a empty block
 	} else {
 		BLOCKLIST finalBlock = {0,0,0,0,0,0,0,0};
 		walker->next = finalBlock;
