@@ -212,7 +212,32 @@ BLOCKLIST pad_last_block(BLOCKLIST blocks) {
 // Continue to the end of the file.
 BLOCKLIST read_cleartext_message(FILE *msg_fp) {
     // TODO
-
+	BLOCKLIST block[8];
+	BLOCKLIST tempBlock[8];
+	char *str[8];
+	int numElements = 0;
+	int c = 0;
+	int index = 0;
+	int blockIndex = 0;
+	if (msg_fp) {
+		while ((c = getc(msg_fp)) != EOF) {
+			if (index == 8) {
+				tempBlock = *( (uint64_t *) str);
+				tempBlock->size = numElements;
+				numElements = 0;
+				block = *tempBlock;
+			} else if (index != 0 && index % 8 == 0) {
+				tempBlock = tempBlock->next;
+				tempBlock = *( (uint64_t *) str);
+				tempBlock->size = numElements;
+				numElements = 0;
+			}
+			str[index % 8] = c;
+			numElements++;
+//			tempBlock[index] = *( (uint64_t *) c);
+//			index++;
+		}
+	}
     // call pad_last_block() here to pad the last block!
    return NULL;
 }
