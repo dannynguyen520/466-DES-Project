@@ -62,6 +62,7 @@ int final_perm[] = {
 /////////////////////////////////////////////////////////////////////////////
 // Subkey generation
 /////////////////////////////////////////////////////////////////////////////
+//There are 16 hardcoded keys
 uint64_t hardcoded_subkeys[] = 
 {
 	0x1b02effc7072,
@@ -265,12 +266,20 @@ KEYTYPE read_key(FILE *key_fp) {
 // just write each 64-bit block directly to the file, without any conversion.
 void write_encrypted_message(FILE *msg_fp, BLOCKLIST msg) {
     // TODO
+	if (msg_fp) {
+			BLOCKLIST walker = msg;
+			while (walker->next != NULL) {
+				fprintf(msg_fp, msg->block);
+				walker = walker->next;
+			}
+	}
 }
 
 // Write the encrypted blocks to file. This is called by the decryption routine.
 // The output file is a plain ASCII file, containing the decrypted text message.
 void write_decrypted_message(FILE *msg_fp, BLOCKLIST msg) {
     // TODO
+
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -282,9 +291,45 @@ void write_decrypted_message(FILE *msg_fp, BLOCKLIST msg) {
 // subkeys needed by the Feistel Network is given by the function getSubKey(i).
 BLOCKTYPE des_enc(BLOCKTYPE v){	
 	// TODO
+	//Step 1: Create a mask to grab each bit
+	uint64_t mask[64];
+	//Fill the mask with all 1's
+	int i;
+	for (i=0; i<64; i++) {
+		mask[i] = 1<<i;
+	}
+	//Step 2: Permutate the block
+	for (i=0; i<64; i++) {
+		if (v & mask[i]) {
+			v |= mask[init_perm[i]];
+		} else {
+			v |= 0;
+		}
+	}
+	//Step 2: Split the block into left and right
+
    return 0;
 }
 
+//BLOCKTYPE permute(BLOCKTYPE b) {
+//
+//	//Step 1: Create a mask to grab each bit
+//	uint64_t mask[64];
+//	//Fill the mask with all 1's
+//	int i;
+//	for (i=0; i<64; i++) {
+//		mask[i] = 1<<i;
+//	}
+//	//Step 2: Permutate the block
+//	for (i=0; i<64; i++) {
+//		if (b & mask[i]) {
+//			b |= mask[init_perm[i]];
+//		} else {
+//			b |= 0;
+//		}
+//	}
+//	return b;
+//}
 // Encrypt the blocks in ECB mode. The blocks have already been padded 
 // by the input routine. The output is an encrypted list of blocks.
 BLOCKLIST des_enc_ECB(BLOCKLIST msg) {
