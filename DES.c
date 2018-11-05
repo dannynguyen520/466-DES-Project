@@ -292,13 +292,13 @@ void write_decrypted_message(FILE *msg_fp, BLOCKLIST msg) {
 BLOCKTYPE des_enc(BLOCKTYPE v){	
 	// TODO
 	//Step 1: Create a mask to grab each bit
-	uint64_t mask[64];
+	uint64_t mask[8];
 	//Fill the mask with all 1's
 	int i;
 	for (i=0; i<64; i++) {
 		mask[i] = 1<<i;
 	}
-	//Step 2: Permutate the block
+	//Step 2: Initially Permutate the block
 	for (i=0; i<64; i++) {
 		if (v & mask[i]) {
 			v |= mask[init_perm[i]];
@@ -307,7 +307,15 @@ BLOCKTYPE des_enc(BLOCKTYPE v){
 		}
 	}
 	//Step 2: Split the block into left and right
-
+	uint32_t left[4];
+	uint32_t right[4];
+	//put the first half of the bits with the left and the other half with the right
+	for (int i=0; i<32; i++) {
+		left = v & mask[i];   // copy the bits
+		left = left << 1;
+		right = v & mask[i+32];
+		right = right << 1;
+	}
    return 0;
 }
 
