@@ -217,7 +217,7 @@ BLOCKLIST pad_last_block(BLOCKLIST blocks) {
 // Continue to the end of the file.
 BLOCKLIST read_cleartext_message(FILE *msg_fp) {
     // TODO
-	BLOCKLIST block;
+	BLOCKLIST block = NULL;
 	BLOCKLIST tempBlock;
 	char str[8];
 	int numElements = 0;
@@ -241,6 +241,10 @@ BLOCKLIST read_cleartext_message(FILE *msg_fp) {
 			numElements++;
 //			tempBlock[index] = *( (uint64_t *) c);
 //			index++;
+		}
+		//File has less than 8 chars
+		if (index < 8) {
+
 		}
 	}
     // call pad_last_block() here to pad the last block!
@@ -270,10 +274,13 @@ KEYTYPE read_key(FILE *key_fp) {
 // just write each 64-bit block directly to the file, without any conversion.
 void write_encrypted_message(FILE *msg_fp, BLOCKLIST msg) {
     // TODO
+	msg_fp = fopen("encrypted.bin","wb");
+
 	if (msg_fp) {
 			BLOCKLIST walker = msg;
 			while (walker->next != NULL) {
-				fprintf(msg_fp, msg->block);
+//				fprintf(msg_fp, msg->block);
+				fwrite(&walker->block, sizeof(walker->block), 1, msg_fp);
 				walker = walker->next;
 			}
 	}
@@ -294,21 +301,21 @@ void write_decrypted_message(FILE *msg_fp, BLOCKLIST msg) {
 // one 64-bit block as input, and returns the encrypted 64-bit block. The 
 // subkeys needed by the Feistel Network is given by the function getSubKey(i).
 BLOCKTYPE des_enc(BLOCKTYPE v){	
-	// TODO
-	//Step 1: Create a mask to grab each bit
-	uint64_t mask[8];
-	//Step 2: Initially Permutate the block
-	v = initialPermute(v);
-	//Step 3: Split the block into left and right
-	uint32_t left[4];
-	uint32_t right[4];
-	//put the first half of the bits with the left and the other half with the right
-	for (int i=0; i<32; i++) {
-		left = v & mask[i];   // copy the bits
-		left = left << 1;
-		right = v & mask[i+32];
-		right = right << 1;
-	}
+//	// TODO
+//	//Step 1: Create a mask to grab each bit
+//	uint64_t mask[8];
+//	//Step 2: Initially Permutate the block
+//	v = initialPermute(v);
+//	//Step 3: Split the block into left and right
+//	uint32_t left[4];
+//	uint32_t right[4];
+//	//put the first half of the bits with the left and the other half with the right
+//	for (int i=0; i<32; i++) {
+//		left = v & mask[i];   // copy the bits
+//		left = left << 1;
+//		right = v & mask[i+32];
+//		right = right << 1;
+//	}
 
    return 0;
 }
@@ -378,44 +385,44 @@ BLOCKLIST des_dec_CTR(BLOCKLIST msg) {
 // Main routine
 /////////////////////////////////////////////////////////////////////////////
 
-void encrypt (int argc, char **argv) {
-      FILE *msg_fp = fopen("message.txt", "r");
-      BLOCKLIST msg = read_cleartext_message(msg_fp);
-      fclose(msg_fp);
-
-      BLOCKLIST encrypted_message;
-      if (!strcmp(argv[2], "-ecb")) {
-         encrypted_message = des_enc_ECB(msg);
-      } else if (!strcmp(argv[2], "-ctr")) {
-         encrypted_message = des_enc_CTR(msg);
-      } else {
-         printf("No such mode.\n");
-      };
-      FILE *encrypted_msg_fp = fopen("encrypted_msg.bin", "wb");
-      write_encrypted_message(encrypted_msg_fp, encrypted_message);
-      fclose(encrypted_msg_fp);
-}
-
-void decrypt (int argc, char **argv) {
+//void encrypt (int argc, char **argv) {
+//      FILE *msg_fp = fopen("message.txt", "r");
+//      BLOCKLIST msg = read_cleartext_message(msg_fp);
+//      fclose(msg_fp);
+//
+//      BLOCKLIST encrypted_message;
+//      if (!strcmp(argv[2], "-ecb")) {
+//         encrypted_message = des_enc_ECB(msg);
+//      } else if (!strcmp(argv[2], "-ctr")) {
+//         encrypted_message = des_enc_CTR(msg);
+//      } else {
+//         printf("No such mode.\n");
+//      };
 //      FILE *encrypted_msg_fp = fopen("encrypted_msg.bin", "wb");
-	  FILE *encrypted_msg_fp = fopen("encrypted_msg.bin", "r");
-      BLOCKLIST encrypted_message = read_encrypted_file(encrypted_msg_fp);
-      fclose(encrypted_msg_fp);
-
-      BLOCKLIST decrypted_message;
-      if (!strcmp(argv[2], "-ecb")) {
-         decrypted_message = des_dec_ECB(encrypted_message);
-      } else if (!strcmp(argv[2], "-ctr")) {
-         encrypted_message = des_dec_CTR(encrypted_message);
-      } else {
-         printf("No such mode.\n");
-      };
-
-//      FILE *decrypted_msg_fp = fopen("decrypted_message.txt", "r");
-      FILE *decrypted_msg_fp = fopen("decrypted_message.txt", "wb");
-      write_decrypted_message(decrypted_msg_fp, decrypted_message);
-      fclose(decrypted_msg_fp);
-}
+//      write_encrypted_message(encrypted_msg_fp, encrypted_message);
+//      fclose(encrypted_msg_fp);
+//}
+//
+//void decrypt (int argc, char **argv) {
+////      FILE *encrypted_msg_fp = fopen("encrypted_msg.bin", "wb");
+//	  FILE *encrypted_msg_fp = fopen("encrypted_msg.bin", "r");
+//      BLOCKLIST encrypted_message = read_encrypted_file(encrypted_msg_fp);
+//      fclose(encrypted_msg_fp);
+//
+//      BLOCKLIST decrypted_message;
+//      if (!strcmp(argv[2], "-ecb")) {
+//         decrypted_message = des_dec_ECB(encrypted_message);
+//      } else if (!strcmp(argv[2], "-ctr")) {
+//         encrypted_message = des_dec_CTR(encrypted_message);
+//      } else {
+//         printf("No such mode.\n");
+//      };
+//
+////      FILE *decrypted_msg_fp = fopen("decrypted_message.txt", "r");
+//      FILE *decrypted_msg_fp = fopen("decrypted_message.txt", "wb");
+//      write_decrypted_message(decrypted_msg_fp, decrypted_message);
+//      fclose(decrypted_msg_fp);
+//}
 
 void print_bits(unsigned int x)
 {
@@ -427,20 +434,17 @@ void print_bits(unsigned int x)
 }
 
 int main(int argc, char **argv){
+	//-----------------TESTING----------------------
 	FILE *msg_fp = fopen("message.txt", "r");
-	BLOCKLIST msg = read_cleartext_messages(msg_fp);
+	printf("blah\n");
+	BLOCKLIST msg = read_cleartext_message(msg_fp);
+	printf("Current blocklist after reading the file: %llu\n", (uint64_t)msg);
+	write_encrypted_message(msg_fp, msg);
 	fclose(msg_fp);
 
-	BLOCKLIST enc_msg = des_enc_ECB(msg);
 
-	int i=0;
-	BLOCKLIST mask = 1;
-	//print bits
-	for(;i<64;++i){
-	    // print last bit and shift left.
-	    printf("%u ",enc_msg&mask ? 1 : 0);
-	    mask = mask<<1;
-	}
+//	BLOCKLIST enc_msg = des_enc_ECB(msg);
+
 
 //   FILE *key_fp = fopen("key.txt","r");
 //   KEYTYPE key = read_key(key_fp);
