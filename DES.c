@@ -195,10 +195,12 @@ BLOCKLIST pad_last_block(BLOCKLIST blocks) {
 	//Case 1: Last block is too short, pad it
 	if (walker->size < 8) {
 		pad = 8 - walker->size;
-		for (int i=0; i<pad-1; i++) {
-			walker->block[walker->size + i] = 0;
-		}
-		walker->block[walker->size - 1] = walker->size;
+//		for (int i=0; i<pad-1; i++) {
+//			walker->block[walker->size + i] = 0;
+			walker->block = walker->block<<pad-1;
+//		}
+//		walker->block[walker->size - 1] = walker->size;
+		walker->block = walker
 	//Case 2: Last block is 8 bytes exactly, make a empty block
 	} else {
 		BLOCKLIST finalBlock = {0,0,0,0,0,0,0,0};
@@ -293,20 +295,9 @@ BLOCKTYPE des_enc(BLOCKTYPE v){
 	// TODO
 	//Step 1: Create a mask to grab each bit
 	uint64_t mask[8];
-	//Fill the mask with all 1's
-	int i;
-	for (i=0; i<64; i++) {
-		mask[i] = 1<<i;
-	}
 	//Step 2: Initially Permutate the block
-	for (i=0; i<64; i++) {
-		if (v & mask[i]) {
-			v |= mask[init_perm[i]];
-		} else {
-			v |= 0;
-		}
-	}
-	//Step 2: Split the block into left and right
+	v = initialPermute(v);
+	//Step 3: Split the block into left and right
 	uint32_t left[4];
 	uint32_t right[4];
 	//put the first half of the bits with the left and the other half with the right
@@ -316,28 +307,30 @@ BLOCKTYPE des_enc(BLOCKTYPE v){
 		right = v & mask[i+32];
 		right = right << 1;
 	}
+
    return 0;
 }
 
-//BLOCKTYPE permute(BLOCKTYPE b) {
-//
-//	//Step 1: Create a mask to grab each bit
-//	uint64_t mask[64];
-//	//Fill the mask with all 1's
-//	int i;
-//	for (i=0; i<64; i++) {
-//		mask[i] = 1<<i;
-//	}
-//	//Step 2: Permutate the block
-//	for (i=0; i<64; i++) {
-//		if (b & mask[i]) {
-//			b |= mask[init_perm[i]];
-//		} else {
-//			b |= 0;
-//		}
-//	}
-//	return b;
-//}
+BLOCKTYPE initialPermute(BLOCKTYPE b) {
+
+	//Step 1: Create a mask to grab each bit
+	uint64_t mask[64];
+	//Fill the mask with all 1's
+	int i;
+	for (i=0; i<64; i++) {
+		mask[i] = 1<<i;
+	}
+	//Step 2: Permutate the block
+	for (i=0; i<64; i++) {
+		if (b & mask[i]) {
+			b |= mask[init_perm[i]];
+		} else {
+			b |= 0;
+		}
+	}
+	return b;
+}
+
 // Encrypt the blocks in ECB mode. The blocks have already been padded 
 // by the input routine. The output is an encrypted list of blocks.
 BLOCKLIST des_enc_ECB(BLOCKLIST msg) {
@@ -422,18 +415,42 @@ void decrypt (int argc, char **argv) {
       fclose(decrypted_msg_fp);
 }
 
-int main(int argc, char **argv){
-   FILE *key_fp = fopen("key.txt","r");
-   KEYTYPE key = read_key(key_fp);
-   generateSubKeys(key);              // This does nothing right now.
-   fclose(key_fp);
+void print_bits(unsigned int x)
+{
+    int i;
+    for(i=8*sizeof(x)-1; i>=0; i--) {
+        (x & (1 << i)) ? putchar('1') : putchar('0');
+    }
+    printf("\n");
+}
 
-   if (!strcmp(argv[1], "-enc")) {
-      encrypt(argc, argv);	
-   } else if (!strcmp(argv[1], "-dec")) {
-      decrypt(argc, argv);	
-   } else {
-     printf("First argument should be -enc or -dec\n"); 
-   }
+int main(int argc, char **argv){
+	FILE *msg_fp = fopen("message.txt", "r");
+	BLOCKLIST msg = read_cleartext_messages(msg_fp);
+	fclose(msg_fp);
+
+	BLOCKLIST enc_msg = des_enc_ECB(msg);
+
+	int i=0;
+	BLOCKLIST mask = 1;
+	//print bits
+	for(;i<64;++i){
+	    // print last bit and shift left.
+	    printf("%u ",enc_msg&mask ? 1 : 0);
+	    mask = mask<<1;
+	}
+
+//   FILE *key_fp = fopen("key.txt","r");
+//   KEYTYPE key = read_key(key_fp);
+//   generateSubKeys(key);              // This does nothing right now.
+//   fclose(key_fp);
+//
+//   if (!strcmp(argv[1], "-enc")) {
+//      encrypt(argc, argv);
+//   } else if (!strcmp(argv[1], "-dec")) {
+//      decrypt(argc, argv);
+//   } else {
+//     printf("First argument should be -enc or -dec\n");
+//   }
    return 0;
 }
