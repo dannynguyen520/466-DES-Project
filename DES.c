@@ -197,13 +197,15 @@ BLOCKLIST pad_last_block(BLOCKLIST blocks) {
 		pad = 8 - walker->size;
 //		for (int i=0; i<pad-1; i++) {
 //			walker->block[walker->size + i] = 0;
-			walker->block = walker->block<<pad-1;
+			walker->block = walker->block<<((pad-1)*8);
 //		}
 //		walker->block[walker->size - 1] = walker->size;
-		walker->block = walker
+		BLOCKTYPE realBytes = pad;
+		walker->block = walker->block<<8;
+		walker->block |= realBytes;
 	//Case 2: Last block is 8 bytes exactly, make a empty block
 	} else {
-		BLOCKLIST finalBlock = {0,0,0,0,0,0,0,0};
+		BLOCKLIST finalBlock = 0;
 		walker->next = finalBlock;
 	}
    return blocks;
@@ -215,23 +217,23 @@ BLOCKLIST pad_last_block(BLOCKLIST blocks) {
 // Continue to the end of the file.
 BLOCKLIST read_cleartext_message(FILE *msg_fp) {
     // TODO
-	BLOCKLIST block[8];
-	BLOCKLIST tempBlock[8];
-	char *str[8];
+	BLOCKLIST block;
+	BLOCKLIST tempBlock;
+	char str[8];
 	int numElements = 0;
 	int c = 0;
 	int index = 0;
-	int blockIndex = 0;
+//	int blockIndex = 0;
 	if (msg_fp) {
 		while ((c = getc(msg_fp)) != EOF) {
 			if (index == 8) {
-				tempBlock = *( (uint64_t *) str);
+				tempBlock->block = *((uint64_t *) str);
 				tempBlock->size = numElements;
 				numElements = 0;
-				block = *tempBlock;
+				block = tempBlock;
 			} else if (index != 0 && index % 8 == 0) {
 				tempBlock = tempBlock->next;
-				tempBlock = *( (uint64_t *) str);
+				tempBlock->block = *( (uint64_t *) str);
 				tempBlock->size = numElements;
 				numElements = 0;
 			}
