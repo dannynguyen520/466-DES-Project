@@ -233,12 +233,14 @@ BLOCKLIST read_cleartext_message(FILE *msg_fp) {
 				tempBlock->size = numElements;
 				numElements = 0;
 				block = tempBlock;
+				memset(str, 0, strlen(str));
 			} else if (index != 0 && index % 8 == 0) {
 				printf("creating next block\n");
 				tempBlock = tempBlock->next;
 				tempBlock->block = *( (uint64_t *) str);
 				tempBlock->size = numElements;
 				numElements = 0;
+				memset(str, 0, strlen(str));
 			}
 			printf("Read char: %c\n", c);
 			str[index % 8] = c;
@@ -252,6 +254,7 @@ BLOCKLIST read_cleartext_message(FILE *msg_fp) {
 			tempBlock->size = numElements;
 			numElements = 0;
 			block = tempBlock;
+			memset(str, 0, strlen(str));
 		}
 	}
 	printf("Exiting loop\n");
@@ -449,8 +452,8 @@ int main(int argc, char **argv){
 	FILE *msg_fp = fopen("message.txt", "r");
 	printf("blah\n");
 	BLOCKLIST msg = read_cleartext_message(msg_fp);
-	printf("Current blocklist after reading the file: %d\n", (unsigned int) msg->block);
-	printf("Current blocklist after reading the file: %x\n", (unsigned int) msg->block);
+	printf("Current blocklist after reading the file: %lld\n", msg->block);
+	printf("Current blocklist after reading the file: %llx\n", msg->block);
 	write_encrypted_message(msg_fp, msg);
 	fclose(msg_fp);
 
