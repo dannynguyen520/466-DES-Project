@@ -225,7 +225,7 @@ BLOCKLIST read_cleartext_message(FILE *msg_fp) {
 	int index = 0;
 //	int blockIndex = 0;
 	if (msg_fp) {
-		while ((c = fgetc(msg_fp)) != '\0') {
+		while ((c = fgetc(msg_fp)) != -1) {
 			printf("inside while index=%d\n",index);
 			if (index == 8) {
 				printf("index was 8, creating first block\n");
@@ -449,7 +449,8 @@ int main(int argc, char **argv){
 	FILE *msg_fp = fopen("message.txt", "r");
 	printf("blah\n");
 	BLOCKLIST msg = read_cleartext_message(msg_fp);
-	printf("Current blocklist after reading the file: %llu\n", (uint64_t)msg);
+	printf("Current blocklist after reading the file: %d\n", (unsigned int) msg->block);
+	printf("Current blocklist after reading the file: %x\n", (unsigned int) msg->block);
 	write_encrypted_message(msg_fp, msg);
 	fclose(msg_fp);
 
