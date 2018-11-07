@@ -200,7 +200,7 @@ BLOCKLIST pad_last_block(BLOCKLIST blocks) {
 			walker->block = walker->block<<((pad-1)*8);
 //		}
 //		walker->block[walker->size - 1] = walker->size;
-		BLOCKTYPE realBytes = pad;
+		BLOCKTYPE realBytes = walker->size;
 		walker->block = walker->block<<8;
 		walker->block |= realBytes;
 	//Case 2: Last block is 8 bytes exactly, make a empty block
@@ -217,8 +217,8 @@ BLOCKLIST pad_last_block(BLOCKLIST blocks) {
 // Continue to the end of the file.
 BLOCKLIST read_cleartext_message(FILE *msg_fp) {
     // TODO
-	BLOCKLIST block = NULL;
-	BLOCKLIST tempBlock;
+	BLOCKLIST head = NULL;
+	BLOCKLIST walker;
 	char str[8];
 	int numElements = 0;
 	int c = 0;
@@ -227,42 +227,65 @@ BLOCKLIST read_cleartext_message(FILE *msg_fp) {
 	if (msg_fp) {
 		while ((c = fgetc(msg_fp)) != -1) {
 			printf("inside while index=%d\n",index);
-			if (index == 8) {
-				printf("index was 8, creating first block\n");
-				tempBlock->block = *((uint64_t *) str);
-				tempBlock->size = numElements;
-				numElements = 0;
-				block = tempBlock;
-				memset(str, 0, strlen(str));
-			} else if (index != 0 && index % 8 == 0) {
-				printf("creating next block\n");
-				tempBlock = tempBlock->next;
-				tempBlock->block = *( (uint64_t *) str);
-				tempBlock->size = numElements;
-				numElements = 0;
-				memset(str, 0, strlen(str));
-			}
 			printf("Read char: %c\n", c);
 			str[index % 8] = c;
 			numElements++;
 			index++;
+			if (index == 8) {
+				printf("index was 8, creating first block\n");
+				walker->block = *((uint64_t *) str);
+				walker->size = numElements;
+				walker->next = head;
+				numElements = 0;
+				head = walker;
+				memset(str, 0, strlen(str));
+			} else if (index != 0 && index % 8 == 0) {
+				printf("creating next block\n");
+				walker = walker->next;
+				walker = malloc(sizeof(BLOCKLIST));
+				walker->block = *( (uint64_t *) str);
+				walker->size = numElements;
+				walker->next = NULL;
+				numElements = 0;
+				memset(str, 0, strlen(str));
+			}
 		}
 		//File has less than 8 chars
 		if (index < 7) {
 			printf("file has less than 8 chars\n");
-			tempBlock->block = *((uint64_t *) str);
-			tempBlock->size = numElements;
+			walker->block = *((uint64_t *) str);
+			walker->size = numElements;
+			walker->next = head;
 			numElements = 0;
-			block = tempBlock;
+			head = walker;
 			memset(str, 0, strlen(str));
+		} else {
+			if (head->next == NULL) {
+				walker = malloc(sizeof(BLOCKLIST));
+				walker->block = *( (uint64_t *) str);
+				walker->size = numElements;
+				walker->next = NULL;
+				numElements = 0;
+				memset(str, 0, strlen(str));
+				head->next = walker;
+			} else {
+				printf("creating next block\n");
+				walker = walker->next;
+				walker = malloc(sizeof(BLOCKLIST));
+				walker->block = *( (uint64_t *) str);
+				walker->size = numElements;
+				walker->next = NULL;
+				numElements = 0;
+				memset(str, 0, strlen(str));
+			}
 		}
 	}
 	printf("Exiting loop\n");
     // call pad_last_block() here to pad the last block!
-	block = pad_last_block(block);
+	head = pad_last_block(head);
 	printf("Done padding\n");
 	fclose(msg_fp);
-   return block;
+   return head;
 }
 
 // Reads the encrypted message, and returns a linked list of blocks, each 64 bits. 
@@ -452,9 +475,15 @@ int main(int argc, char **argv){
 	FILE *msg_fp = fopen("message.txt", "r");
 	printf("blah\n");
 	BLOCKLIST msg = read_cleartext_message(msg_fp);
-	printf("Current blocklist after reading the file: %lld\n", msg->block);
-	printf("Current blocklist after reading the file: %llx\n", msg->block);
-	write_encrypted_message(msg_fp, msg);
+	int block = 1;
+	while (msg != NULL) {
+		printf("Block %d:----------------------------\n", block);
+		printf("Decimal: %lld\n", msg->block);
+		printf("    Hex: %llx\n", msg->block);
+		msg = msg->next;
+		block++;
+	}
+//	write_encrypted_message(msg_fp, msg);
 	fclose(msg_fp);
 
 
