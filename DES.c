@@ -225,29 +225,40 @@ BLOCKLIST read_cleartext_message(FILE *msg_fp) {
 	int index = 0;
 //	int blockIndex = 0;
 	if (msg_fp) {
-		while ((c = getc(msg_fp)) != EOF) {
+		while ((c = fgetc(msg_fp)) != '\0') {
+			printf("inside while index=%d\n",index);
 			if (index == 8) {
+				printf("index was 8, creating first block\n");
 				tempBlock->block = *((uint64_t *) str);
 				tempBlock->size = numElements;
 				numElements = 0;
 				block = tempBlock;
 			} else if (index != 0 && index % 8 == 0) {
+				printf("creating next block\n");
 				tempBlock = tempBlock->next;
 				tempBlock->block = *( (uint64_t *) str);
 				tempBlock->size = numElements;
 				numElements = 0;
 			}
+			printf("Read char: %c\n", c);
 			str[index % 8] = c;
 			numElements++;
-//			tempBlock[index] = *( (uint64_t *) c);
-//			index++;
+			index++;
 		}
 		//File has less than 8 chars
-		if (index < 8) {
-
+		if (index < 7) {
+			printf("file has less than 8 chars\n");
+			tempBlock->block = *((uint64_t *) str);
+			tempBlock->size = numElements;
+			numElements = 0;
+			block = tempBlock;
 		}
 	}
+	printf("Exiting loop\n");
     // call pad_last_block() here to pad the last block!
+	block = pad_last_block(block);
+	printf("Done padding\n");
+	fclose(msg_fp);
    return block;
 }
 
