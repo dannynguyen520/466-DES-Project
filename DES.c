@@ -293,9 +293,49 @@ BLOCKLIST read_cleartext_message(FILE *msg_fp) {
 // this file should always be a multiople of 8 bytes. The output is a linked list of
 // 64-bit blocks.
 BLOCKLIST read_encrypted_file(FILE *msg_fp) {
-    // TODO
 
-   return NULL;
+	BLOCKLIST head = NULL;
+	BLOCKLIST walker;
+	msg_fp = fopen("encrypted.bin", "rb");
+	BLOCKTYPE buffer;
+	size_t bytes;
+	if (msg_fp) {
+//		bytes = fread(&buffer, 1, 8, msg_fp);
+//		while ((c = fgetc(msg_fp)) != -1) {
+//			printf("char grabbed: %d\n", c);
+//
+//		}
+//		printf("size of BLOCKTYPE: %d\n", sizeof(BLOCKTYPE));
+//		printf("read size: %d\n", bytes);
+//		printf("buffer = %llx", buffer);
+		while ((bytes = fread(&buffer, 1, 8, msg_fp)) > 0 ) {
+//			printf("buffer = %llx\n", buffer);
+//			printf("bytes read = %d\n", bytes);
+			if (head == NULL) {
+				head = malloc(sizeof(BLOCKLIST));
+				head->block = buffer;
+				head->next = NULL;
+				head->size = bytes;
+			} else if (head->next == NULL) {
+				walker = malloc(sizeof(BLOCKLIST));
+				walker->block = buffer;
+				walker->next = NULL;
+				walker->size = bytes;
+				head->next = walker;
+			} else {
+				walker = head;
+				while (walker != NULL) {
+					walker = walker->next;
+				}
+				walker = malloc(sizeof(BLOCKLIST));
+				walker->block = buffer;
+				walker->next = NULL;
+				walker->size = bytes;
+			}
+		}
+	}
+	fclose(msg_fp);
+   return head;
 }
 
 // Reads 56-bit key into a 64 bit unsigned int. We will ignore the most significant byte,
@@ -314,13 +354,14 @@ void write_encrypted_message(FILE *msg_fp, BLOCKLIST msg) {
 	msg_fp = fopen("encrypted.bin","wb");
 
 	if (msg_fp) {
-			BLOCKLIST walker = msg;
-			while (walker->next != NULL) {
+		BLOCKLIST walker = msg;
+		while (walker != NULL) {
 //				fprintf(msg_fp, msg->block);
-				fwrite(&walker->block, sizeof(walker->block), 1, msg_fp);
-				walker = walker->next;
-			}
+			fwrite(&walker->block, sizeof(walker->block), 1, msg_fp);
+			walker = walker->next;
+		}
 	}
+	fclose(msg_fp);
 }
 
 // Write the encrypted blocks to file. This is called by the decryption routine.
@@ -474,8 +515,10 @@ int main(int argc, char **argv){
 	//-----------------TESTING----------------------
 	FILE *msg_fp = fopen("message.txt", "r");
 	printf("blah\n");
-	BLOCKLIST msg = read_cleartext_message(msg_fp);
+	BLOCKLIST head = read_cleartext_message(msg_fp);
 	int block = 1;
+	BLOCKLIST msg = head;
+	printf("====================read_cleartext_message:===========================\n");
 	while (msg != NULL) {
 		printf("Block %d:----------------------------\n", block);
 		printf("Decimal: %lld\n", msg->block);
@@ -483,9 +526,20 @@ int main(int argc, char **argv){
 		msg = msg->next;
 		block++;
 	}
-//	write_encrypted_message(msg_fp, msg);
-	fclose(msg_fp);
+	write_encrypted_message(msg_fp, head);
+	block = 0;
+	BLOCKLIST msg2 = read_encrypted_file(msg_fp);
+	printf("====================read_encrypted_file:================================\n");
+	while (msg2 != NULL) {
+		printf("Block %d:----------------------------\n", block);
+		printf("Decimal: %lld\n", msg2->block);
+		printf("    Hex: %llx\n", msg2->block);
+		msg2 = msg2->next;
+		block++;
+	}
 
+	fclose(msg_fp);
+	//--------------------------------------------------
 
 //	BLOCKLIST enc_msg = des_enc_ECB(msg);
 
