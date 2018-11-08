@@ -166,6 +166,15 @@ uint64_t sbox_8[4][16] = {
 	{ 7, 11,  4,  1,  9, 12, 14 , 2,  0  ,6, 10 ,13 ,15 , 3  ,5  ,8},
 	{ 2,  1, 14 , 7 , 4, 10,  8, 13, 15, 12,  9,  0 , 3,  5 , 6 ,11}};
 
+void print_bits(BLOCKTYPE x)
+{
+    int i;
+    for(i=8*sizeof(x)-1; i>=0; i--) {
+        (x & (1 << i)) ? putchar('1') : putchar('0');
+    }
+    printf("\n");
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // I/O
 /////////////////////////////////////////////////////////////////////////////
@@ -375,54 +384,93 @@ void write_decrypted_message(FILE *msg_fp, BLOCKLIST msg) {
 // Encryption
 /////////////////////////////////////////////////////////////////////////////
 
-//For sanity, i dont want to scroll up
-//uint64_t init_perm[] = {
-//	58,50,42,34,26,18,10,2,
-//	60,52,44,36,28,20,12,4,
-//	62,54,46,38,30,22,14,6,
-//	64,56,48,40,32,24,16,8,
-//	57,49,41,33,25,17,9,1,
-//	59,51,43,35,27,19,11,3,
-//	61,53,45,37,29,21,13,5,
-//	63,55,47,39,31,23,15,7
-//};
-BLOCKTYPE swap(BLOCKTYPE b, int pos) {
+BLOCKTYPE move(BLOCKTYPE b, int pos) {
 	//Pushes the mask which starts at the first bit to the correct position for masking
 	BLOCKTYPE mask = 1;
-	mask = mask << init_perm[pos]-1;
-	BLOCKTYPE mask2 = 1;
-	mask2 = mask2 << pos;
+	mask = mask << (init_perm[pos]-1);
+//	BLOCKTYPE mask2 = 1;
+//	mask2 = mask2 << pos;
 	//Grab the bits from the Block
 	mask = mask & b;
-	mask2 = mask2 & b;
+//	mask2 = mask2 & b;
 	//move the pos to each others, swapping basically
-	mask = mask
-	BLOCKTYPE result;
+	if (init_perm[pos] > pos) {
+		mask = mask >> (init_perm[pos]-1);
+	} else {
+		mask = mask << (init_perm[pos]-1);
+	}
 
-	return result;
+	return mask;
 }
 
 BLOCKTYPE initPermute(BLOCKTYPE b){
 	printf("Before permutate----------------\n");
 	printf("    Hex: %llx\n", b);
+//	print_bits(b);
 	//Step 1: Create a mask to grab each bit
-	uint64_t mask = 1;
+//	uint64_t mask = 1;
 //	//Fill the mask with all 1's
 	int i;
 //	for (i=0; i<64; i++) {
 //		mask[i] = 1<<i;
 //	}
 	//Step 2: Permutate the block
+	BLOCKTYPE newBlock = 0;
 	for (i=0; i<64; i++) {
-		if (b & mask) {
-			b |= mask[init_perm[i]];
-		} else {
-			b |= 0;
-		}
+		BLOCKTYPE temp = move(b, i);
+		newBlock |= temp;
+//		if (b & mask) {
+//			b |= mask[init_perm[i]];
+//		} else {
+//			b |= 0;
+//		}
 	}
 	printf("After permutate---------------\n");
-	printf("    Hex: %llx\n", b);
-	return b;
+	printf("    Hex: %llx\n", newBlock);
+//	print_bits(newBlock);
+	return newBlock;
+}
+
+BLOCKTYPE expand(BLOCKTYPE right) {
+	BLOCKTYPE newRight = 0;
+	BLOCKTYPE temp = 0;
+	BLOCKTYPE mask = 1;
+	int i;
+	for (i=0; i<48; i++) {
+		mask = mask<<(expand_box[i]-1);
+		temp = mask & right;
+		temp = temp>>(expand_box[i]-1);
+		newRight |= temp;
+		temp = 0;
+		mask = 1;
+	}
+
+	return newRight;
+}
+
+BLOCKTYPE f_function(BLOCKTYPE right, BLOCKTYPE key) {
+//  1.expand right
+	right = expand(right);
+//	2.XOR the expanded R and the compressed key,
+	right = right ^ key;
+
+//	3.Send the result through 8 S-boxes using the S-Box
+//	Substitution to get 32 new bits,
+	BLOCKTYPE inputBlock = 0;
+	BLOCKTYPE mask6Bit = 0;
+	int i;
+	mask6Bit = 1;
+	for (i=0; i<5; i++) {
+		mask6Bit = mask6Bit << 1;
+		mask6Bit += 1;
+	}
+	int row = 0;
+	int col = 0;
+
+	sbox_1[4][16];
+
+//	4. Permute the result using the P-Box Permutation
+
 }
 
 // Encrypt one block. This is where the main computation takes place. It takes
@@ -430,20 +478,31 @@ BLOCKTYPE initPermute(BLOCKTYPE b){
 // subkeys needed by the Feistel Network is given by the function getSubKey(i).
 BLOCKTYPE des_enc(BLOCKTYPE v){
 	// TODO
-	//Step 1: Create a mask to grab each bit
-	uint64_t mask[8];
-	//Step 2: Initially Permutate the block
+	//Step 1: Initially Permutate the block
 	v = initPermute(v);
-//	//Step 3: Split the block into left and right
-//	uint32_t left[4];
-//	uint32_t right[4];
-//	//put the first half of the bits with the left and the other half with the right
-//	for (int i=0; i<32; i++) {
-//		left = v & mask[i];   // copy the bits
-//		left = left << 1;
-//		right = v & mask[i+32];
-//		right = right << 1;
-//	}
+	//Step 2: Split the block into left and right
+	BLOCKTYPE left = 0;
+	BLOCKTYPE right = 0;
+	BLOCKTYPE mask = 1;
+	BLOCKTYPE mask2 = (1<<32);
+	//put the first half of the bits with the left and the other half with the right
+	int i;
+	for (i=0; i<32; i++) {
+		right = v & mask;
+		left = v & mask2;
+		mask = mask << 1;
+		mask2 = mask2 << 1;
+	}
+//	right |= (uint32_t)v;
+//	left |= (v>>32);
+//	printf("Left:");
+//	print_bits(right);
+//	printf("Right:");
+//	print_bits(left);
+	//Step 3: 16 rounds of encrypting
+	for (i=0; i<16; i++) {
+		left
+	}
 
    return v;
 }
@@ -537,14 +596,6 @@ BLOCKLIST des_dec_CTR(BLOCKLIST msg) {
 //      fclose(decrypted_msg_fp);
 //}
 
-void print_bits(unsigned int x)
-{
-    int i;
-    for(i=8*sizeof(x)-1; i>=0; i--) {
-        (x & (1 << i)) ? putchar('1') : putchar('0');
-    }
-    printf("\n");
-}
 
 int main(int argc, char **argv){
 	//-----------------TESTING----------------------
