@@ -395,7 +395,10 @@ BLOCKTYPE swap(BLOCKTYPE b, int pos) {
 	//Grab the bits from the Block
 	mask = mask & b;
 	mask2 = mask2 & b;
+	//move the pos to each others, swapping basically
+	mask = mask
 	BLOCKTYPE result;
+
 	return result;
 }
 
