@@ -166,6 +166,15 @@ uint64_t sbox_8[4][16] = {
 	{ 7, 11,  4,  1,  9, 12, 14 , 2,  0  ,6, 10 ,13 ,15 , 3  ,5  ,8},
 	{ 2,  1, 14 , 7 , 4, 10,  8, 13, 15, 12,  9,  0 , 3,  5 , 6 ,11}};
 
+void print_bits(BLOCKTYPE x)
+{
+    int i;
+    for(i=8*sizeof(x)-1; i>=0; i--) {
+        (x & (1 << i)) ? putchar('1') : putchar('0');
+    }
+    printf("\n");
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // I/O
 /////////////////////////////////////////////////////////////////////////////
@@ -233,16 +242,18 @@ BLOCKLIST read_cleartext_message(FILE *msg_fp) {
 			index++;
 			if (index == 8) {
 				printf("index was 8, creating first block\n");
+				printf("INSETING string: %s\n", str);
 				walker->block = *((uint64_t *) str);
 				walker->size = numElements;
-				walker->next = head;
+				walker->next = NULL;
 				numElements = 0;
 				head = walker;
 				memset(str, 0, strlen(str));
 			} else if (index != 0 && index % 8 == 0) {
 				printf("creating next block\n");
+				walker->next = malloc(sizeof(BLOCKLIST));
 				walker = walker->next;
-				walker = malloc(sizeof(BLOCKLIST));
+				printf("INSETING string: %s\n", str);
 				walker->block = *( (uint64_t *) str);
 				walker->size = numElements;
 				walker->next = NULL;
@@ -375,55 +386,140 @@ void write_decrypted_message(FILE *msg_fp, BLOCKLIST msg) {
 // Encryption
 /////////////////////////////////////////////////////////////////////////////
 
-// Encrypt one block. This is where the main computation takes place. It takes
-// one 64-bit block as input, and returns the encrypted 64-bit block. The 
-// subkeys needed by the Feistel Network is given by the function getSubKey(i).
-BLOCKTYPE des_enc(BLOCKTYPE v){	
-//	// TODO
-//	//Step 1: Create a mask to grab each bit
-//	uint64_t mask[8];
-//	//Step 2: Initially Permutate the block
-//	v = initialPermute(v);
-//	//Step 3: Split the block into left and right
-//	uint32_t left[4];
-//	uint32_t right[4];
-//	//put the first half of the bits with the left and the other half with the right
-//	for (int i=0; i<32; i++) {
-//		left = v & mask[i];   // copy the bits
-//		left = left << 1;
-//		right = v & mask[i+32];
-//		right = right << 1;
-//	}
+BLOCKTYPE move(BLOCKTYPE b, int pos) {
+	//Pushes the mask which starts at the first bit to the correct position for masking
+	BLOCKTYPE mask = 1;
+	mask = mask << (init_perm[pos]-1);
+//	BLOCKTYPE mask2 = 1;
+//	mask2 = mask2 << pos;
+	//Grab the bits from the Block
+	mask = mask & b;
+//	mask2 = mask2 & b;
+	//move the pos to each others, swapping basically
+	if (init_perm[pos] > pos) {
+		mask = mask >> (init_perm[pos]-1);
+	} else {
+		mask = mask << (init_perm[pos]-1);
+	}
 
-   return 0;
+	return mask;
 }
 
-BLOCKTYPE initialPermute(BLOCKTYPE b) {
-
+BLOCKTYPE initPermute(BLOCKTYPE b){
+	printf("Before permutate----------------\n");
+	printf("    Hex: %016llx\n", b);
+//	print_bits(b);
 	//Step 1: Create a mask to grab each bit
-	uint64_t mask[64];
-	//Fill the mask with all 1's
+//	uint64_t mask = 1;
+//	//Fill the mask with all 1's
 	int i;
-	for (i=0; i<64; i++) {
-		mask[i] = 1<<i;
-	}
+//	for (i=0; i<64; i++) {
+//		mask[i] = 1<<i;
+//	}
 	//Step 2: Permutate the block
+	BLOCKTYPE newBlock = 0;
 	for (i=0; i<64; i++) {
-		if (b & mask[i]) {
-			b |= mask[init_perm[i]];
-		} else {
-			b |= 0;
-		}
+		BLOCKTYPE temp = move(b, i);
+		newBlock |= temp;
+//		if (b & mask) {
+//			b |= mask[init_perm[i]];
+//		} else {
+//			b |= 0;
+//		}
 	}
-	return b;
+	printf("After permutate---------------\n");
+	printf("    Hex: %016llx\n", newBlock);
+//	print_bits(newBlock);
+	return newBlock;
+}
+
+BLOCKTYPE expand(BLOCKTYPE right) {
+	BLOCKTYPE newRight = 0;
+	BLOCKTYPE temp = 0;
+	BLOCKTYPE mask = 1;
+	int i;
+	for (i=0; i<48; i++) {
+		mask = mask<<(expand_box[i]-1);
+		temp = mask & right;
+		temp = temp>>(expand_box[i]-1);
+		newRight |= temp;
+		temp = 0;
+		mask = 1;
+	}
+
+	return newRight;
+}
+
+BLOCKTYPE f_function(BLOCKTYPE right, BLOCKTYPE key) {
+//  1.expand right
+	right = expand(right);
+//	2.XOR the expanded R and the compressed key,
+	right = right ^ key;
+
+//	3.Send the result through 8 S-boxes using the S-Box
+//	Substitution to get 32 new bits,
+	BLOCKTYPE inputBlock = 0;
+	BLOCKTYPE mask6Bit = 0;
+	int i;
+	mask6Bit = 1;
+	for (i=0; i<5; i++) {
+		mask6Bit = mask6Bit << 1;
+		mask6Bit += 1;
+	}
+	int row = 0;
+	int col = 0;
+
+	sbox_1[4][16];
+
+//	4. Permute the result using the P-Box Permutation
+
+}
+
+// Encrypt one block. This is where the main computation takes place. It takes
+// one 64-bit block as input, and returns the encrypted 64-bit block. The
+// subkeys needed by the Feistel Network is given by the function getSubKey(i).
+BLOCKTYPE des_enc(BLOCKTYPE v){
+	// TODO
+	//Step 1: Initially Permutate the block
+	v = initPermute(v);
+	//Step 2: Split the block into left and right
+	BLOCKTYPE left = 0;
+	BLOCKTYPE right = 0;
+	BLOCKTYPE mask = 1;
+	BLOCKTYPE mask2 = (1<<32);
+	//put the first half of the bits with the left and the other half with the right
+	int i;
+	for (i=0; i<32; i++) {
+		right = v & mask;
+		left = v & mask2;
+		mask = mask << 1;
+		mask2 = mask2 << 1;
+	}
+//	right |= (uint32_t)v;
+//	left |= (v>>32);
+//	printf("Left:");
+//	print_bits(right);
+//	printf("Right:");
+//	print_bits(left);
+	//Step 3: 16 rounds of encrypting
+	for (i=0; i<16; i++) {
+		//left
+	}
+
+   return v;
 }
 
 // Encrypt the blocks in ECB mode. The blocks have already been padded 
 // by the input routine. The output is an encrypted list of blocks.
 BLOCKLIST des_enc_ECB(BLOCKLIST msg) {
     // TODO
+	BLOCKLIST walker = msg;
+	while (walker != NULL) {
+		walker->block = des_enc(walker->block);
+		walker = walker->next;
+	}
     // Should call des_enc in here repeatedly
-   return NULL;
+   return msg;
 }
 
 // Same as des_enc_ECB, but encrypt the blocks in Counter mode.
@@ -502,14 +598,6 @@ BLOCKLIST des_dec_CTR(BLOCKLIST msg) {
 //      fclose(decrypted_msg_fp);
 //}
 
-void print_bits(unsigned int x)
-{
-    int i;
-    for(i=8*sizeof(x)-1; i>=0; i--) {
-        (x & (1 << i)) ? putchar('1') : putchar('0');
-    }
-    printf("\n");
-}
 
 int main(int argc, char **argv){
 	//-----------------TESTING----------------------
@@ -518,30 +606,35 @@ int main(int argc, char **argv){
 	BLOCKLIST head = read_cleartext_message(msg_fp);
 	int block = 1;
 	BLOCKLIST msg = head;
-	printf("====================read_cleartext_message:===========================\n");
+	printf("\n\n====================read_cleartext_message:===========================\n");
 	while (msg != NULL) {
 		printf("Block %d:----------------------------\n", block);
-		printf("Decimal: %lld\n", msg->block);
-		printf("    Hex: %llx\n", msg->block);
+		printf("Decimal: %016lld\n", msg->block);
+		printf("    Hex: %016llx\n", msg->block);
 		msg = msg->next;
 		block++;
 	}
+
+	printf("\n\n==================des_enc_ECB:==============================\n");
+	BLOCKLIST enc_msg = des_enc_ECB(head);
+
+
+
+
 	write_encrypted_message(msg_fp, head);
 	block = 0;
 	BLOCKLIST msg2 = read_encrypted_file(msg_fp);
-	printf("====================read_encrypted_file:================================\n");
+	printf("\n\n====================read_encrypted_file:================================\n");
 	while (msg2 != NULL) {
 		printf("Block %d:----------------------------\n", block);
-		printf("Decimal: %lld\n", msg2->block);
-		printf("    Hex: %llx\n", msg2->block);
+		printf("Decimal: %016lld\n", msg2->block);
+		printf("    Hex: %016llx\n", msg2->block);
 		msg2 = msg2->next;
 		block++;
 	}
 
 	fclose(msg_fp);
 	//--------------------------------------------------
-
-//	BLOCKLIST enc_msg = des_enc_ECB(msg);
 
 
 //   FILE *key_fp = fopen("key.txt","r");
