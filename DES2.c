@@ -386,47 +386,40 @@ void write_decrypted_message(FILE *msg_fp, BLOCKLIST msg) {
 // Encryption
 /////////////////////////////////////////////////////////////////////////////
 
-BLOCKTYPE move(BLOCKTYPE b, int pos) {
-	//Pushes the mask which starts at the first bit to the correct position for masking
-	BLOCKTYPE mask = 1;
-	mask = mask << (init_perm[pos]-1);
-//	BLOCKTYPE mask2 = 1;
-//	mask2 = mask2 << pos;
-	//Grab the bits from the Block
-	mask = mask & b;
-//	mask2 = mask2 & b;
-	//move the pos to each others, swapping basically
-	if (init_perm[pos] > pos) {
-		mask = mask >> (init_perm[pos]-1);
-	} else {
-		mask = mask << (init_perm[pos]-1);
-	}
-
-	return mask;
-}
-
 BLOCKTYPE initPermute(BLOCKTYPE b){
 	printf("Before permutate----------------\n");
 	printf("    Hex: %016llx\n", b);
-//	print_bits(b);
-	//Step 1: Create a mask to grab each bit
-//	uint64_t mask = 1;
-//	//Fill the mask with all 1's
-	int i;
-//	for (i=0; i<64; i++) {
-//		mask[i] = 1<<i;
-//	}
-	//Step 2: Permutate the block
+
+    BLOCKTYPE masked;
+    BLOCKTYPE thebit;
 	BLOCKTYPE newBlock = 0;
-	for (i=0; i<64; i++) {
-		BLOCKTYPE temp = move(b, i);
-		newBlock |= temp;
-//		if (b & mask) {
-//			b |= mask[init_perm[i]];
-//		} else {
-//			b |= 0;
-//		}
+	BLOCKTYPE mask;
+	for (int i=0; i<64; i++) {
+		mask =  1 << (63 - init_perm[i]);
+		masked = b & mask;
+		thebit = masked >> (63 - init_perm[i]);
+		newBlock |= thebit;
+		newBlock = newBlock << 1;
 	}
+	for(int i = 63; i >= 0; i--){
+		mask =  1 << i;
+		BLOCKTYPE masked_n = newBlock & mask;
+		thebit = masked_n >> i;
+		printf("%d", thebit);
+
+  	}
+printf("\n");
+	// BLOCKTYPE p = newBlock;
+	// newBlock = 0;
+	// for (int i=0; i<64; i++) {
+	// 	mask =  1 << (63-final_perm[i]-1);
+	// 	masked = p & mask;
+	// 	thebit = masked >> (63-final_perm[i]-1);
+	// 	newBlock |= thebit;
+	// 	newBlock = newBlock << 1;
+	// }
+
+	
 	printf("After permutate---------------\n");
 	printf("    Hex: %016llx\n", newBlock);
 //	print_bits(newBlock);
