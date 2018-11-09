@@ -242,16 +242,18 @@ BLOCKLIST read_cleartext_message(FILE *msg_fp) {
 			index++;
 			if (index == 8) {
 				printf("index was 8, creating first block\n");
+				printf("INSETING string: %s\n", str);
 				walker->block = *((uint64_t *) str);
 				walker->size = numElements;
-				walker->next = head;
+				walker->next = NULL;
 				numElements = 0;
 				head = walker;
 				memset(str, 0, strlen(str));
 			} else if (index != 0 && index % 8 == 0) {
 				printf("creating next block\n");
+				walker->next = malloc(sizeof(BLOCKLIST));
 				walker = walker->next;
-				walker = malloc(sizeof(BLOCKLIST));
+				printf("INSETING string: %s\n", str);
 				walker->block = *( (uint64_t *) str);
 				walker->size = numElements;
 				walker->next = NULL;
@@ -405,7 +407,7 @@ BLOCKTYPE move(BLOCKTYPE b, int pos) {
 
 BLOCKTYPE initPermute(BLOCKTYPE b){
 	printf("Before permutate----------------\n");
-	printf("    Hex: %llx\n", b);
+	printf("    Hex: %016llx\n", b);
 //	print_bits(b);
 	//Step 1: Create a mask to grab each bit
 //	uint64_t mask = 1;
@@ -426,7 +428,7 @@ BLOCKTYPE initPermute(BLOCKTYPE b){
 //		}
 	}
 	printf("After permutate---------------\n");
-	printf("    Hex: %llx\n", newBlock);
+	printf("    Hex: %016llx\n", newBlock);
 //	print_bits(newBlock);
 	return newBlock;
 }
@@ -501,7 +503,7 @@ BLOCKTYPE des_enc(BLOCKTYPE v){
 //	print_bits(left);
 	//Step 3: 16 rounds of encrypting
 	for (i=0; i<16; i++) {
-		left
+		//left
 	}
 
    return v;
@@ -607,8 +609,8 @@ int main(int argc, char **argv){
 	printf("\n\n====================read_cleartext_message:===========================\n");
 	while (msg != NULL) {
 		printf("Block %d:----------------------------\n", block);
-		printf("Decimal: %lld\n", msg->block);
-		printf("    Hex: %llx\n", msg->block);
+		printf("Decimal: %016lld\n", msg->block);
+		printf("    Hex: %016llx\n", msg->block);
 		msg = msg->next;
 		block++;
 	}
@@ -625,8 +627,8 @@ int main(int argc, char **argv){
 	printf("\n\n====================read_encrypted_file:================================\n");
 	while (msg2 != NULL) {
 		printf("Block %d:----------------------------\n", block);
-		printf("Decimal: %lld\n", msg2->block);
-		printf("    Hex: %llx\n", msg2->block);
+		printf("Decimal: %016lld\n", msg2->block);
+		printf("    Hex: %016llx\n", msg2->block);
 		msg2 = msg2->next;
 		block++;
 	}
