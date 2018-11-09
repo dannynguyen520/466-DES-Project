@@ -16,7 +16,7 @@
  *    encrypted_msg.bin      -- the encrypted message, a binary file,
  *                              written by "des -enc"
  *    decrypted_message.txt  -- the decrypted ASCII text message
- *    key.txt                -- just contains the key, on a line by itself, as an ASCII 
+ *    key.txt                -- just contains the key, on a line by itself, as an ASCII
  *                              hex number, such as: 0x34FA879B
 */
 
@@ -63,7 +63,7 @@ int final_perm[] = {
 // Subkey generation
 /////////////////////////////////////////////////////////////////////////////
 //There are 16 hardcoded keys
-uint64_t hardcoded_subkeys[] = 
+uint64_t hardcoded_subkeys[] =
 {
 	0x1b02effc7072,
 	0x79aed9dbc9e5,
@@ -80,7 +80,7 @@ uint64_t hardcoded_subkeys[] =
 	0x97C5D1FABA41,
 	0x5F43B7F2E73A,
 	0xBF918D3D3F0A,
-	0xCB3D8B0E17F5, 
+	0xCB3D8B0E17F5,
 };
 
 // Each subkey is 48 bits. To simplify the assignment we're hardcoding keys here.
@@ -105,11 +105,11 @@ uint64_t expand_box[] = {
 	24,25,26,27,28,29,28,29,30,31,32,1
 };
 
-uint32_t Pbox[] = 
+uint32_t Pbox[] =
 {
 	16,7,20,21,29,12,28,17,1,15,23,26,5,18,31,10,
 	2,8,24,14,32,27,3,9,19,13,30,6,22,11,4,25,
-};		
+};
 
 /////////////////////////////////////////////////////////////////////////////
 // S-boxes
@@ -138,8 +138,8 @@ uint64_t sbox_4[4][16] = {
 	{13,  8, 11,  5,  6, 15,  0,  3,  4 , 7 , 2, 12,  1, 10, 14,  9},
 	{10,  6,  9 , 0, 12, 11,  7, 13 ,15 , 1 , 3, 14 , 5 , 2,  8,  4},
 	{ 3, 15,  0,  6, 10,  1, 13,  8,  9 , 4 , 5, 11 ,12 , 7,  2, 14}};
- 
- 
+
+
 uint64_t sbox_5[4][16] = {
 	{ 2, 12,  4,  1 , 7 ,10, 11,  6 , 8 , 5 , 3, 15, 13,  0, 14,  9},
 	{14, 11 , 2 ,12 , 4,  7, 13 , 1 , 5 , 0, 15, 10,  3,  9,  8,  6},
@@ -152,14 +152,14 @@ uint64_t sbox_6[4][16] = {
 	{10, 15,  4,  2,  7, 12 , 9 , 5 , 6,  1 ,13 ,14 , 0 ,11 , 3 , 8},
 	{ 9, 14 ,15,  5,  2,  8 ,12 , 3 , 7 , 0,  4 ,10  ,1 ,13 ,11 , 6},
 	{ 4,  3,  2, 12 , 9,  5 ,15 ,10, 11 ,14,  1 , 7  ,6 , 0 , 8 ,13}};
- 
+
 
 uint64_t sbox_7[4][16] = {
 	{ 4, 11,  2, 14, 15,  0 , 8, 13, 3,  12 , 9 , 7,  6 ,10 , 6 , 1},
 	{13,  0, 11,  7,  4 , 9,  1, 10, 14 , 3 , 5, 12,  2, 15 , 8 , 6},
 	{ 1 , 4, 11, 13, 12,  3,  7, 14, 10, 15 , 6,  8,  0,  5 , 9 , 2},
 	{ 6, 11, 13 , 8,  1 , 4, 10,  7,  9 , 5 , 0, 15, 14,  2 , 3 ,12}};
- 
+
 uint64_t sbox_8[4][16] = {
 	{13,  2,  8,  4,  6 ,15 ,11,  1, 10,  9 , 3, 14,  5,  0, 12,  7},
 	{ 1, 15, 13,  8 ,10 , 3  ,7 , 4, 12 , 5,  6 ,11,  0 ,14 , 9 , 2},
@@ -181,16 +181,16 @@ void print_bits(BLOCKTYPE x)
 
 // Pad the list of blocks, so that every block is 64 bits, even if the
 // file isn't a perfect multiple of 8 bytes long. In the input list of blocks,
-// the last block may have "size" < 8. In this case, it needs to be padded. See 
-// the slides for how to do this (the last byte of the last block 
+// the last block may have "size" < 8. In this case, it needs to be padded. See
+// the slides for how to do this (the last byte of the last block
 // should contain the number if real bytes in the block, add an extra block if
 // the file is an exact multiple of 8 bytes long.) The returned
 // list of blocks will always have the "size"-field=8.
 // Example:
 //    1) The last block is 5 bytes long: [10,20,30,40,50]. We pad it with 2 bytes,
-//       and set the length to 5: [10,20,30,40,50,0,0,5]. This means that the 
+//       and set the length to 5: [10,20,30,40,50,0,0,5]. This means that the
 //       first 5 bytes of the block are "real", the last 3 should be discarded.
-//    2) The last block is 8 bytes long: [10,20,30,40,50,60,70,80]. We keep this 
+//    2) The last block is 8 bytes long: [10,20,30,40,50,60,70,80]. We keep this
 //       block as is, and add a new final block: [0,0,0,0,0,0,0,0]. When we decrypt,
 //       the entire last block will be discarded since the last byte is 0
 BLOCKLIST pad_last_block(BLOCKLIST blocks) {
@@ -220,7 +220,7 @@ BLOCKLIST pad_last_block(BLOCKLIST blocks) {
    return blocks;
 }
 
-// Reads the message to be encrypted, an ASCII text file, and returns a linked list 
+// Reads the message to be encrypted, an ASCII text file, and returns a linked list
 // of BLOCKs, each representing a 64 bit block. In other words, read the first 8 characters
 // from the input file, and convert them (just a C cast) to 64 bits; this is your first block.
 // Continue to the end of the file.
@@ -299,15 +299,15 @@ BLOCKLIST read_cleartext_message(FILE *msg_fp) {
    return head;
 }
 
-// Reads the encrypted message, and returns a linked list of blocks, each 64 bits. 
-// Note that, because of the padding that was done by the encryption, the length of 
+// Reads the encrypted message, and returns a linked list of blocks, each 64 bits.
+// Note that, because of the padding that was done by the encryption, the length of
 // this file should always be a multiople of 8 bytes. The output is a linked list of
 // 64-bit blocks.
 BLOCKLIST read_encrypted_file(FILE *msg_fp) {
 
 	BLOCKLIST head = NULL;
 	BLOCKLIST walker;
-	msg_fp = fopen("encrypted.bin", "rb");
+	msg_fp = fopen("encrypted_msg.bin", "rb");
 	BLOCKTYPE buffer;
 	size_t bytes;
 	if (msg_fp) {
@@ -350,7 +350,7 @@ BLOCKLIST read_encrypted_file(FILE *msg_fp) {
 }
 
 // Reads 56-bit key into a 64 bit unsigned int. We will ignore the most significant byte,
-// i.e. we'll assume that the top 8 bits are all 0. In real DES, these are used to check 
+// i.e. we'll assume that the top 8 bits are all 0. In real DES, these are used to check
 // that the key hasn't been corrupted in transit. The key file is ASCII, consisting of
 // exactly one line. That line has a single hex number on it, the key, such as 0x08AB674D9.
 KEYTYPE read_key(FILE *key_fp) {
@@ -362,7 +362,7 @@ KEYTYPE read_key(FILE *key_fp) {
 // just write each 64-bit block directly to the file, without any conversion.
 void write_encrypted_message(FILE *msg_fp, BLOCKLIST msg) {
     // TODO
-	msg_fp = fopen("encrypted.bin","wb");
+	msg_fp = fopen("encrypted_msg.bin","wb");
 
 	if (msg_fp) {
 		BLOCKLIST walker = msg;
@@ -486,7 +486,8 @@ BLOCKTYPE des_enc(BLOCKTYPE v){
 	BLOCKTYPE left = 0;
 	BLOCKTYPE right = 0;
 	BLOCKTYPE mask = 1;
-	BLOCKTYPE mask2 = (1<<32);
+	BLOCKTYPE mask2 = 1;
+	mask2 = mask2<<32;
 	//put the first half of the bits with the left and the other half with the right
 	int i;
 	for (i=0; i<32; i++) {
@@ -509,7 +510,7 @@ BLOCKTYPE des_enc(BLOCKTYPE v){
    return v;
 }
 
-// Encrypt the blocks in ECB mode. The blocks have already been padded 
+// Encrypt the blocks in ECB mode. The blocks have already been padded
 // by the input routine. The output is an encrypted list of blocks.
 BLOCKLIST des_enc_ECB(BLOCKLIST msg) {
     // TODO
