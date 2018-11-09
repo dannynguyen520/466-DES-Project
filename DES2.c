@@ -20,6 +20,10 @@
  *                              hex number, such as: 0x34FA879B
 */
 
+/*
+	Author: Chun Wu and Danny Nguyen
+*/
+
 /////////////////////////////////////////////////////////////////////////////
 // Type definitions
 /////////////////////////////////////////////////////////////////////////////
@@ -62,7 +66,6 @@ int final_perm[] = {
 /////////////////////////////////////////////////////////////////////////////
 // Subkey generation
 /////////////////////////////////////////////////////////////////////////////
-//There are 16 hardcoded keys
 uint64_t hardcoded_subkeys[] = 
 {
 	0x1b02effc7072,
@@ -194,7 +197,6 @@ void print_bits(BLOCKTYPE x)
 //       block as is, and add a new final block: [0,0,0,0,0,0,0,0]. When we decrypt,
 //       the entire last block will be discarded since the last byte is 0
 BLOCKLIST pad_last_block(BLOCKLIST blocks) {
-    // TODO
 	int pad = 0;
 	BLOCKLIST walker = blocks;
 	while (walker->next != NULL) {
@@ -204,11 +206,7 @@ BLOCKLIST pad_last_block(BLOCKLIST blocks) {
 	//Case 1: Last block is too short, pad it
 	if (walker->size < 8) {
 		pad = 8 - walker->size;
-//		for (int i=0; i<pad-1; i++) {
-//			walker->block[walker->size + i] = 0;
-			walker->block = walker->block<<((pad-1)*8);
-//		}
-//		walker->block[walker->size - 1] = walker->size;
+		walker->block = walker->block<<((pad-1)*8);
 		BLOCKTYPE realBytes = walker->size;
 		walker->block = walker->block<<8;
 		walker->block |= realBytes;
@@ -225,24 +223,18 @@ BLOCKLIST pad_last_block(BLOCKLIST blocks) {
 // from the input file, and convert them (just a C cast) to 64 bits; this is your first block.
 // Continue to the end of the file.
 BLOCKLIST read_cleartext_message(FILE *msg_fp) {
-    // TODO
 	BLOCKLIST head = NULL;
 	BLOCKLIST walker;
 	char str[8];
 	int numElements = 0;
 	int c = 0;
 	int index = 0;
-//	int blockIndex = 0;
 	if (msg_fp) {
 		while ((c = fgetc(msg_fp)) != -1) {
-			printf("inside while index=%d\n",index);
-			printf("Read char: %c\n", c);
 			str[index % 8] = c;
 			numElements++;
 			index++;
 			if (index == 8) {
-				printf("index was 8, creating first block\n");
-				printf("INSETING string: %s\n", str);
 				walker->block = *((uint64_t *) str);
 				walker->size = numElements;
 				walker->next = NULL;
@@ -250,10 +242,8 @@ BLOCKLIST read_cleartext_message(FILE *msg_fp) {
 				head = walker;
 				memset(str, 0, strlen(str));
 			} else if (index != 0 && index % 8 == 0) {
-				printf("creating next block\n");
 				walker->next = malloc(sizeof(BLOCKLIST));
 				walker = walker->next;
-				printf("INSETING string: %s\n", str);
 				walker->block = *( (uint64_t *) str);
 				walker->size = numElements;
 				walker->next = NULL;
@@ -263,7 +253,6 @@ BLOCKLIST read_cleartext_message(FILE *msg_fp) {
 		}
 		//File has less than 8 chars
 		if (index < 7) {
-			printf("file has less than 8 chars\n");
 			walker->block = *((uint64_t *) str);
 			walker->size = numElements;
 			walker->next = head;
@@ -280,7 +269,6 @@ BLOCKLIST read_cleartext_message(FILE *msg_fp) {
 				memset(str, 0, strlen(str));
 				head->next = walker;
 			} else {
-				printf("creating next block\n");
 				walker = walker->next;
 				walker = malloc(sizeof(BLOCKLIST));
 				walker->block = *( (uint64_t *) str);
@@ -291,10 +279,8 @@ BLOCKLIST read_cleartext_message(FILE *msg_fp) {
 			}
 		}
 	}
-	printf("Exiting loop\n");
     // call pad_last_block() here to pad the last block!
 	head = pad_last_block(head);
-	printf("Done padding\n");
 	fclose(msg_fp);
    return head;
 }
@@ -311,17 +297,7 @@ BLOCKLIST read_encrypted_file(FILE *msg_fp) {
 	BLOCKTYPE buffer;
 	size_t bytes;
 	if (msg_fp) {
-//		bytes = fread(&buffer, 1, 8, msg_fp);
-//		while ((c = fgetc(msg_fp)) != -1) {
-//			printf("char grabbed: %d\n", c);
-//
-//		}
-//		printf("size of BLOCKTYPE: %d\n", sizeof(BLOCKTYPE));
-//		printf("read size: %d\n", bytes);
-//		printf("buffer = %llx", buffer);
 		while ((bytes = fread(&buffer, 1, 8, msg_fp)) > 0 ) {
-//			printf("buffer = %llx\n", buffer);
-//			printf("bytes read = %d\n", bytes);
 			if (head == NULL) {
 				head = malloc(sizeof(BLOCKLIST));
 				head->block = buffer;
@@ -361,13 +337,11 @@ KEYTYPE read_key(FILE *key_fp) {
 // Write the encrypted blocks to file. The encrypted file is in binary, i.e., you can
 // just write each 64-bit block directly to the file, without any conversion.
 void write_encrypted_message(FILE *msg_fp, BLOCKLIST msg) {
-    // TODO
 	msg_fp = fopen("encrypted.bin","wb");
 
 	if (msg_fp) {
 		BLOCKLIST walker = msg;
 		while (walker != NULL) {
-//				fprintf(msg_fp, msg->block);
 			fwrite(&walker->block, sizeof(walker->block), 1, msg_fp);
 			walker = walker->next;
 		}
@@ -386,10 +360,11 @@ void write_decrypted_message(FILE *msg_fp, BLOCKLIST msg) {
 // Encryption
 /////////////////////////////////////////////////////////////////////////////
 
+/*
+	Performs the initial permutation step in encryption by moving bits according to the 
+	init_perm[] array.
+*/
 BLOCKTYPE initPermute(BLOCKTYPE b){
-	printf("Before permutate----------------\n");
-	printf("    Hex: %016llx\n", b);
-
     BLOCKTYPE masked;
     BLOCKTYPE thebit;
 	BLOCKTYPE newBlock = 0;
@@ -405,26 +380,14 @@ BLOCKTYPE initPermute(BLOCKTYPE b){
 		mask =  1 << i;
 		BLOCKTYPE masked_n = newBlock & mask;
 		thebit = masked_n >> i;
-		printf("%d", thebit);
-
   	}
-printf("\n");
-	// BLOCKTYPE p = newBlock;
-	// newBlock = 0;
-	// for (int i=0; i<64; i++) {
-	// 	mask =  1 << (63-final_perm[i]-1);
-	// 	masked = p & mask;
-	// 	thebit = masked >> (63-final_perm[i]-1);
-	// 	newBlock |= thebit;
-	// 	newBlock = newBlock << 1;
-	// }
-
-	
-	printf("After permutate---------------\n");
-	printf("    Hex: %016llx\n", newBlock);
-//	print_bits(newBlock);
 	return newBlock;
 }
+
+/*
+	Applies the expansion box, similiar to permutation, moving around the bits, 
+	forming the 32 bit right into a 48 bit.
+*/
 
 BLOCKTYPE expand(BLOCKTYPE right) {
 	BLOCKTYPE newRight = 0;
@@ -479,7 +442,8 @@ BLOCKTYPE des_enc(BLOCKTYPE v){
 	BLOCKTYPE left = 0;
 	BLOCKTYPE right = 0;
 	BLOCKTYPE mask = 1;
-	BLOCKTYPE mask2 = (1<<32);
+	BLOCKTYPE mask2 = 1;
+	mask2 = mask2 << 32;
 	//put the first half of the bits with the left and the other half with the right
 	int i;
 	for (i=0; i<32; i++) {
@@ -495,9 +459,9 @@ BLOCKTYPE des_enc(BLOCKTYPE v){
 //	printf("Right:");
 //	print_bits(left);
 	//Step 3: 16 rounds of encrypting
-	for (i=0; i<16; i++) {
-		//left
-	}
+	// for (i=0; i<16; i++) {
+	// 	//left
+	// }
 
    return v;
 }
@@ -552,95 +516,58 @@ BLOCKLIST des_dec_CTR(BLOCKLIST msg) {
 // Main routine
 /////////////////////////////////////////////////////////////////////////////
 
-//void encrypt (int argc, char **argv) {
-//      FILE *msg_fp = fopen("message.txt", "r");
-//      BLOCKLIST msg = read_cleartext_message(msg_fp);
-//      fclose(msg_fp);
-//
-//      BLOCKLIST encrypted_message;
-//      if (!strcmp(argv[2], "-ecb")) {
-//         encrypted_message = des_enc_ECB(msg);
-//      } else if (!strcmp(argv[2], "-ctr")) {
-//         encrypted_message = des_enc_CTR(msg);
-//      } else {
-//         printf("No such mode.\n");
-//      };
+void encrypt (int argc, char **argv) {
+     FILE *msg_fp = fopen("message.txt", "r");
+     BLOCKLIST msg = read_cleartext_message(msg_fp);
+     fclose(msg_fp);
+
+     BLOCKLIST encrypted_message;
+     if (!strcmp(argv[2], "-ecb")) {
+        encrypted_message = des_enc_ECB(msg);
+     } else if (!strcmp(argv[2], "-ctr")) {
+        encrypted_message = des_enc_CTR(msg);
+     } else {
+        printf("No such mode.\n");
+     };
+     FILE *encrypted_msg_fp = fopen("encrypted_msg.bin", "wb");
+     write_encrypted_message(encrypted_msg_fp, encrypted_message);
+     fclose(encrypted_msg_fp);
+}
+
+void decrypt (int argc, char **argv) {
 //      FILE *encrypted_msg_fp = fopen("encrypted_msg.bin", "wb");
-//      write_encrypted_message(encrypted_msg_fp, encrypted_message);
-//      fclose(encrypted_msg_fp);
-//}
-//
-//void decrypt (int argc, char **argv) {
-////      FILE *encrypted_msg_fp = fopen("encrypted_msg.bin", "wb");
-//	  FILE *encrypted_msg_fp = fopen("encrypted_msg.bin", "r");
-//      BLOCKLIST encrypted_message = read_encrypted_file(encrypted_msg_fp);
-//      fclose(encrypted_msg_fp);
-//
-//      BLOCKLIST decrypted_message;
-//      if (!strcmp(argv[2], "-ecb")) {
-//         decrypted_message = des_dec_ECB(encrypted_message);
-//      } else if (!strcmp(argv[2], "-ctr")) {
-//         encrypted_message = des_dec_CTR(encrypted_message);
-//      } else {
-//         printf("No such mode.\n");
-//      };
-//
-////      FILE *decrypted_msg_fp = fopen("decrypted_message.txt", "r");
-//      FILE *decrypted_msg_fp = fopen("decrypted_message.txt", "wb");
-//      write_decrypted_message(decrypted_msg_fp, decrypted_message);
-//      fclose(decrypted_msg_fp);
-//}
+	  FILE *encrypted_msg_fp = fopen("encrypted_msg.bin", "r");
+     BLOCKLIST encrypted_message = read_encrypted_file(encrypted_msg_fp);
+     fclose(encrypted_msg_fp);
+
+     BLOCKLIST decrypted_message;
+     if (!strcmp(argv[2], "-ecb")) {
+        decrypted_message = des_dec_ECB(encrypted_message);
+     } else if (!strcmp(argv[2], "-ctr")) {
+        encrypted_message = des_dec_CTR(encrypted_message);
+     } else {
+        printf("No such mode.\n");
+     };
+
+//      FILE *decrypted_msg_fp = fopen("decrypted_message.txt", "r");
+     FILE *decrypted_msg_fp = fopen("decrypted_message.txt", "wb");
+     write_decrypted_message(decrypted_msg_fp, decrypted_message);
+     fclose(decrypted_msg_fp);
+}
 
 
 int main(int argc, char **argv){
-	//-----------------TESTING----------------------
-	FILE *msg_fp = fopen("message.txt", "r");
-	printf("blah\n");
-	BLOCKLIST head = read_cleartext_message(msg_fp);
-	int block = 1;
-	BLOCKLIST msg = head;
-	printf("\n\n====================read_cleartext_message:===========================\n");
-	while (msg != NULL) {
-		printf("Block %d:----------------------------\n", block);
-		printf("Decimal: %016lld\n", msg->block);
-		printf("    Hex: %016llx\n", msg->block);
-		msg = msg->next;
-		block++;
-	}
+  FILE *key_fp = fopen("key.txt","r");
+  KEYTYPE key = read_key(key_fp);
+  generateSubKeys(key);              // This does nothing right now.
+  fclose(key_fp);
 
-	printf("\n\n==================des_enc_ECB:==============================\n");
-	BLOCKLIST enc_msg = des_enc_ECB(head);
-
-
-
-
-	write_encrypted_message(msg_fp, head);
-	block = 0;
-	BLOCKLIST msg2 = read_encrypted_file(msg_fp);
-	printf("\n\n====================read_encrypted_file:================================\n");
-	while (msg2 != NULL) {
-		printf("Block %d:----------------------------\n", block);
-		printf("Decimal: %016lld\n", msg2->block);
-		printf("    Hex: %016llx\n", msg2->block);
-		msg2 = msg2->next;
-		block++;
-	}
-
-	fclose(msg_fp);
-	//--------------------------------------------------
-
-
-//   FILE *key_fp = fopen("key.txt","r");
-//   KEYTYPE key = read_key(key_fp);
-//   generateSubKeys(key);              // This does nothing right now.
-//   fclose(key_fp);
-//
-//   if (!strcmp(argv[1], "-enc")) {
-//      encrypt(argc, argv);
-//   } else if (!strcmp(argv[1], "-dec")) {
-//      decrypt(argc, argv);
-//   } else {
-//     printf("First argument should be -enc or -dec\n");
-//   }
+  if (!strcmp(argv[1], "-enc")) {
+     encrypt(argc, argv);
+  } else if (!strcmp(argv[1], "-dec")) {
+     decrypt(argc, argv);
+  } else {
+    printf("First argument should be -enc or -dec\n");
+  }
    return 0;
 }
